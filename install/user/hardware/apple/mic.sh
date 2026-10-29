@@ -22,9 +22,13 @@ if [[ ! -e $mic_wants/omarchy-asahi-mic.service && ! -L $mic_wants/omarchy-asahi
 fi
 mic_status=0
 omarchy-audio-asahi-mic-map || mic_status=$?
-if [[ -S ${XDG_RUNTIME_DIR:-/run/user/$UID}/bus ]]; then
-  systemctl --user daemon-reload
-  systemctl --user start omarchy-asahi-mic.service
+# The bus can be live while XDG_RUNTIME_DIR is unset -- the guided install runs
+# this from sudo -i while the owner has an ssh session open -- and systemctl
+# --user finds the bus only through that variable.
+runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$UID}
+if [[ -S $runtime_dir/bus ]]; then
+  XDG_RUNTIME_DIR=$runtime_dir systemctl --user daemon-reload
+  XDG_RUNTIME_DIR=$runtime_dir systemctl --user start omarchy-asahi-mic.service
 fi
 if (( mic_status != 0 && mic_status != 75 )); then
   return "$mic_status"
