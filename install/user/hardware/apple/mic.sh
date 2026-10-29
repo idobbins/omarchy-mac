@@ -1,6 +1,12 @@
 # Seed absent policy and supervise the runtime graph without replacing user choices.
 omarchy-hw-apple || return 0
 
+# The user manager and audio server can be live while XDG_RUNTIME_DIR is unset
+# -- the guided install runs this from sudo -i while the owner has an ssh
+# session open -- and both pactl and systemctl --user find them only through it.
+runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$UID}
+[[ -d $runtime_dir ]] && export XDG_RUNTIME_DIR=$runtime_dir
+
 mic_policy_dir="$HOME/.config/wireplumber/wireplumber.conf.d"
 mic_policy="$mic_policy_dir/asahi-headset-mic.conf"
 mkdir -p "$mic_policy_dir"
@@ -22,13 +28,9 @@ if [[ ! -e $mic_wants/omarchy-asahi-mic.service && ! -L $mic_wants/omarchy-asahi
 fi
 mic_status=0
 omarchy-audio-asahi-mic-map || mic_status=$?
-# The bus can be live while XDG_RUNTIME_DIR is unset -- the guided install runs
-# this from sudo -i while the owner has an ssh session open -- and systemctl
-# --user finds the bus only through that variable.
-runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$UID}
 if [[ -S $runtime_dir/bus ]]; then
-  XDG_RUNTIME_DIR=$runtime_dir systemctl --user daemon-reload
-  XDG_RUNTIME_DIR=$runtime_dir systemctl --user start omarchy-asahi-mic.service
+  systemctl --user daemon-reload
+  systemctl --user start omarchy-asahi-mic.service
 fi
 if (( mic_status != 0 && mic_status != 75 )); then
   return "$mic_status"
