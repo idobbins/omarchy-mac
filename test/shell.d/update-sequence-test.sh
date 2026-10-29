@@ -132,3 +132,15 @@ if UPDATE_TEST_SCRIPT="$test_tmp/channel-update" OMARCHY_PATH="$ROOT" OMARCHY_UP
 fi
 ! grep -Eq '^(omarchy-hook|omarchy-update-restart) ' "$test_tmp/steps" || fail "failed channel migration stops downstream work"
 pass "channel transaction and migration failures propagate without downstream success"
+
+# Run straight over SSH, the update inherits no OMARCHY_PATH from a shell
+# profile, and omarchy-update-dev reads it under set -u.
+cat >"$stub_bin/omarchy-update-dev" <<'STUB'
+#!/bin/bash
+set -u
+printf '%s unattended=%s path=%s\n' "${0##*/}" "${OMARCHY_UPDATE_UNATTENDED:-}" "$OMARCHY_PATH" >>"$STEP_LOG"
+STUB
+(unset OMARCHY_PATH; run_update -y) || fail "an update without OMARCHY_PATH set fails" "$(cat "$test_tmp/err")"
+grep -q '^omarchy-update-dev unattended=1 path=/usr/share/omarchy$' "$test_tmp/steps" ||
+  fail "an update without OMARCHY_PATH set does not fall back to the package path" "$(cat "$test_tmp/steps")"
+pass "an update run without OMARCHY_PATH resolves it before its steps need it"

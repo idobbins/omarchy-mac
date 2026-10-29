@@ -7,6 +7,17 @@
 
 set -e
 
+# A command run straight over SSH or from a service gets no shell setup, so
+# OMARCHY_PATH can be unset here, and the update steps that read it under
+# set -u would stop on it. Resolve it the way login shells do.
+if [[ -z ${OMARCHY_PATH:-} ]]; then
+  if [[ -f /usr/share/omarchy/default/bash/env-bootstrap ]]; then
+    source /usr/share/omarchy/default/bash/env-bootstrap
+  else
+    export OMARCHY_PATH=/usr/share/omarchy
+  fi
+fi
+
 if [[ -z ${OMARCHY_UPDATE_LOGGED:-} ]]; then
   script_command=$(printf '%q ' "$0" "$@")
   exec env OMARCHY_UPDATE_LOGGED=1 script -qefc "$script_command" "/tmp/omarchy-update.log"
