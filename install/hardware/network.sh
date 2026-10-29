@@ -61,3 +61,11 @@ if [[ -e /run/systemd/resolve/stub-resolv.conf ]]; then
 elif [[ -e /run/NetworkManager/resolv.conf ]]; then
   ln -sfn ../run/NetworkManager/resolv.conf /etc/resolv.conf
 fi
+
+# Stopping systemd-networkd above drops its DHCP lease until the socket brings
+# it back a second or so later, and the next hardware steps download packages.
+# Give name resolution a moment to return instead of failing them.
+for _ in {1..30}; do
+  getent ahosts archlinuxarm.org >/dev/null 2>&1 && break
+  sleep 1
+done

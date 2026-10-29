@@ -46,6 +46,8 @@ grep -F 'ln -sfn ../run/NetworkManager/resolv.conf /etc/resolv.conf' "$ROOT/inst
   fail "hardware setup links resolv.conf to the live NetworkManager resolver"
 grep -F 'systemctl enable systemd-resolved.service' "$ROOT/install/config/enable-services.sh" >/dev/null ||
   fail "system setup enables the resolver resolv.conf now points at"
+grep -F 'getent ahosts archlinuxarm.org' "$ROOT/install/hardware/network.sh" >/dev/null ||
+  fail "hardware setup waits for DNS after stopping systemd-networkd, before later steps download packages"
 pass "fresh installs keep DNS working before and after resolver startup"
 
 # Asahi Alarm configures NetworkManager to drive Wi-Fi through iwd, so disabling
