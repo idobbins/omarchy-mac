@@ -15,7 +15,7 @@ if ! grep -qx 'ENABLED=no' "$TEST_UFW_CONFIG"; then
   exit 90
 fi
 case ${1:-} in
-  default|allow) ;;
+  default|allow|limit) ;;
   *) echo 'unexpected live firewall command' >&2; exit 91 ;;
 esac
 [[ ${TEST_FAIL_AT:-} != "ufw" ]] || exit 42
